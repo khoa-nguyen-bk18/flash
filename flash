@@ -1,0 +1,26 @@
+#!/usr/bin/env python3
+"""
+Executable launcher for Android Studio Flash CLI suite.
+"""
+
+import os
+import sys
+from pathlib import Path
+
+# Resolve actual path even when called via symlink
+SOURCE_PATH = Path(__file__).resolve()
+SCRIPT_DIR = SOURCE_PATH.parent
+MAIN_PY = SCRIPT_DIR / "main.py"
+
+if not MAIN_PY.exists():
+    print(f"Error: Cannot find main.py at {MAIN_PY}", file=sys.stderr)
+    sys.exit(1)
+
+# Ensure flash root directory is in sys.path
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+# Forward execution to main.py
+if __name__ == "__main__":
+    from main import main
+    main()
