@@ -140,6 +140,53 @@ def resolve_target_device(device_arg: Optional[str] = None, interactive: bool = 
     return devices[0]
 
 
+def resolve_target_devices(device_arg: Optional[str] = None, interactive: bool = True) -> List[DeviceInfo]:
+    """
+    Resolve target device(s) for execution.
+    - If device_arg is specified, returns [matched_device].
+    - If no devices connected, returns [].
+    - If only 1 device connected (or online), returns that device.
+    - If multiple devices:
+        If interactive: prompts user with multiselect (Up/Down + Space + "Run all" option).
+        If not interactive: returns all online devices (or all devices).
+    """
+    devices = get_connected_devices()
+    if not devices:
+        ui.error("No Android devices or emulators connected!")
+        ui.info("Check: 1) Cable is plugged in  2) USB Debugging enabled  3) Prompt approved on phone.")
+        return []
+
+    if device_arg:
+        # Match by serial or model prefix
+        for d in devices:
+            if d.serial == device_arg or device_arg in d.serial or device_arg.lower() in d.model.lower():
+                return [d]
+        ui.error(f"Device '{device_arg}' not found among connected devices.")
+        return []
+
+    # If only 1 device connected, use it automatically
+    if len(devices) == 1:
+        return devices
+
+    online_devices = [d for d in devices if d.is_online]
+    if len(online_devices) == 1:
+        return online_devices
+
+    if not interactive:
+        return online_devices if online_devices else devices
+
+    # Multiple devices: prompt user with multiselect
+    options = [(d.serial, d.display_name) for d in devices]
+    chosen_serials = ui.ask_multiselect(
+        title="Có nhiều thiết bị đang kết nối. Vui lòng chọn thiết bị:",
+        options=options,
+        all_label="⚡ Run all (Tất cả thiết bị đang attached)"
+    )
+
+    selected_devs = [d for d in devices if d.serial in chosen_serials]
+    return selected_devs if selected_devs else devices
+
+
 def get_device_ip(serial: str) -> Optional[str]:
     """
     Get device private IP address while connected via USB.

@@ -210,13 +210,62 @@ def resolve_target_flavor(module: Optional[str] = None, flavor_arg: Optional[str
         return None
 
     selected = flavor_map[chosen.lower()]
-    # Prompt to remember if not already saved
-    if saved != selected.name:
-        if ui.ask_confirm(f"Lưu '{selected.name}' làm flavor mặc định cho các lệnh sau?", default=True):
-            cfg.set_selected_flavor(selected.name)
-            ui.info(f"Đã lưu flavor mặc định: {selected.name}")
-
     return selected
+
+
+def resolve_target_flavors(module: Optional[str] = None, flavor_arg: Optional[str] = None,
+                           interactive: bool = True) -> List[Optional[FlavorInfo]]:
+    """
+    Resolve target product flavors:
+    - If 0 flavors exist in module, returns [None] (standard single APK build).
+    - If flavor_arg is provided via CLI (-f/--flavor), validates and returns [matched_flavor].
+    - If 1 flavor exists, returns [flavors[0]].
+    - If >1 flavors exist:
+        If interactive: prompts user with multiselect (Up/Down + Space + "Run all" option).
+        If not interactive: returns all flavors.
+    Note: Does NOT prompt to save default flavor.
+    """
+    flavors = get_product_flavors(module=module)
+    if not flavors:
+        return [None]
+
+    flavor_map = {f.name.lower(): f for f in flavors}
+
+    if flavor_arg:
+        fl_lower = flavor_arg.lower()
+        if fl_lower in flavor_map:
+            return [flavor_map[fl_lower]]
+        ui.error(f"Flavor '{flavor_arg}' không tồn tại trong module. Các flavor hiện có: {', '.join(flavor_map.keys())}")
+        sys.exit(1)
+
+    if len(flavors) == 1:
+        return [flavors[0]]
+
+    if not interactive:
+        return flavors
+
+    # Multiple flavors: interactive multiselect
+    options = []
+    for f in flavors:
+        desc_parts = []
+        if f.dimension:
+            desc_parts.append(f"dimension: {f.dimension}")
+        if f.application_id_suffix:
+            desc_parts.append(f"suffix: {f.application_id_suffix}")
+        desc = f"{ui.Colors.BOLD}{f.name}{ui.Colors.RESET}"
+        if desc_parts:
+            desc += f" ({', '.join(desc_parts)})"
+        options.append((f.name, desc))
+
+    chosen_names = ui.ask_multiselect(
+        title="Phát hiện nhiều Product Flavors. Vui lòng chọn Flavor:",
+        options=options,
+        all_label="⚡ Run all (Tất cả flavors)"
+    )
+
+    chosen_set = {name.lower() for name in chosen_names}
+    selected_flavors = [f for f in flavors if f.name.lower() in chosen_set]
+    return selected_flavors if selected_flavors else flavors
 
 
 def list_modules() -> List[str]:
