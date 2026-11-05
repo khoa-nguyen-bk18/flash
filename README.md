@@ -157,6 +157,11 @@ Hiển thị danh sách đầy đủ tất cả các action:
 # Khởi động lại app
 ./flash restart
 ./flash restart -f vietnamese
+./flash restart -c             # Xóa dữ liệu và khởi động lại app
+
+# Xóa sạch dữ liệu và khởi động lại app (Clear Data & Restart)
+./flash clear-restart          # (Aliases tiện lợi: ./flash reset hoặc ./flash cr)
+./flash clear-restart -f vietnamese
 
 # Buộc dừng app (Force Stop)
 ./flash kill

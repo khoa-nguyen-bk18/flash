@@ -121,6 +121,13 @@ def action_clear_data(dev: DeviceInfo, pkg: str, restart: bool = False, launcher
         action_start(dev, pkg, launcher)
 
 
+def action_clear_restart(dev: DeviceInfo, pkg: str, launcher: str):
+    """
+    Xóa toàn bộ dữ liệu ứng dụng (Clear Data) và khởi động lại ứng dụng trên thiết bị.
+    """
+    action_clear_data(dev, pkg, restart=True, launcher=launcher)
+
+
 def action_uninstall(dev: DeviceInfo, pkg: str):
     cfg = ConfigManager.get_instance()
     adb = cfg.get_adb_path()
@@ -408,7 +415,7 @@ def run_quick_menu(device_id: Optional[str] = None, flavor: Optional[str] = None
         ("1", "Restart App", lambda: action_restart(dev, pkg, launcher)),
         ("2", "Kill App (Force Stop)", lambda: action_kill(dev, pkg)),
         ("3", "Clear App Data", lambda: action_clear_data(dev, pkg)),
-        ("4", "Clear App Data and Restart", lambda: action_clear_data(dev, pkg, restart=True, launcher=launcher)),
+        ("4", "Clear App Data and Restart", lambda: action_clear_restart(dev, pkg, launcher)),
         ("5", "Start App", lambda: action_start(dev, pkg, launcher)),
         ("6", "Uninstall App", lambda: action_uninstall(dev, pkg)),
         ("7", "Install APK...", lambda: action_install_apk(dev)),

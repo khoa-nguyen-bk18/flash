@@ -30,7 +30,7 @@ from commands.cmd_module import run_module
 from commands.cmd_flavor import run_flavor
 from commands.cmd_quick import (
     run_quick_menu, resolve_app_context,
-    action_restart, action_kill, action_clear_data, action_start,
+    action_restart, action_kill, action_clear_data, action_clear_restart, action_start,
     action_uninstall, action_install_apk, action_grant_permissions,
     action_revoke_permissions, action_wifi, action_mobile_data,
     action_airplane, action_screenshot, action_shell
@@ -86,8 +86,10 @@ def main():
   flash flavor list              Xem danh sách productFlavors
   flash action                   Mở menu thao tác nhanh ADB & thiết bị
   flash restart                  Khởi động lại ứng dụng trên thiết bị
+  flash restart -c               Xóa dữ liệu và khởi động lại app
   flash kill                     Buộc dừng ứng dụng (Force Stop)
   flash clear -r                 Xóa dữ liệu và khởi động lại app
+  flash clear-restart            Xóa dữ liệu và khởi động lại app ngay lập tức (alias: reset, cr)
   flash perm grant               Cấp toàn bộ quyền runtime cho app
   flash wifi toggle              Bật/tắt Wi-Fi trên thiết bị
   flash screenshot               Chụp ảnh màn hình thiết bị và lưu về máy tính
@@ -149,9 +151,17 @@ def main():
     # quick direct shortcuts:
     # restart
     p_rst = subparsers.add_parser("restart", help="Khởi động lại ứng dụng trên thiết bị")
+    p_rst.add_argument("-c", "--clear", action="store_true", help="Xóa sạch dữ liệu (Clear Data) trước khi khởi động lại")
     p_rst.add_argument("-s", "--device", help="Thiết bị")
     p_rst.add_argument("-f", "--flavor", help="Flavor")
     p_rst.add_argument("-p", "--package", help="Package Name")
+
+    # clear-restart
+    p_cr = subparsers.add_parser("clear-restart", aliases=["reset", "cr", "clear-and-restart"],
+                                 help="Xóa dữ liệu và khởi động lại ứng dụng ngay lập tức (Clear App Data & Restart)")
+    p_cr.add_argument("-s", "--device", help="Thiết bị")
+    p_cr.add_argument("-f", "--flavor", help="Flavor")
+    p_cr.add_argument("-p", "--package", help="Package Name")
 
     # kill
     p_kill = subparsers.add_parser("kill", help="Buộc dừng ứng dụng (Force Stop)")
@@ -283,7 +293,13 @@ def main():
             run_quick_menu(device_id=args.device, flavor=args.flavor, package_name=args.package)
         elif args.command == "restart":
             dev, pkg, launcher = resolve_app_context(device_id=args.device, flavor=args.flavor, package_name=args.package)
-            action_restart(dev, pkg, launcher)
+            if args.clear:
+                action_clear_restart(dev, pkg, launcher)
+            else:
+                action_restart(dev, pkg, launcher)
+        elif args.command in ("clear-restart", "reset", "cr", "clear-and-restart"):
+            dev, pkg, launcher = resolve_app_context(device_id=args.device, flavor=args.flavor, package_name=args.package)
+            action_clear_restart(dev, pkg, launcher)
         elif args.command == "kill":
             dev, pkg, _ = resolve_app_context(device_id=args.device, flavor=args.flavor, package_name=args.package)
             action_kill(dev, pkg)
