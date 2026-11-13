@@ -1,5 +1,7 @@
 # ⚡ Android Studio Flash CLI Suite
 
+[![CodeQL](https://github.com/khoa-nguyen-bk18/flash/actions/workflows/codeql.yml/badge.svg)](https://github.com/khoa-nguyen-bk18/flash/actions/workflows/codeql.yml)
+[![Secret Scanning](https://img.shields.io/badge/Secret%20Scanning-Protected-green?logo=github)](https://github.com/khoa-nguyen-bk18/flash/security)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=khoa-nguyen-bk18_flash&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=khoa-nguyen-bk18_flash)
 [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=khoa-nguyen-bk18_flash&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=khoa-nguyen-bk18_flash)
 [![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=khoa-nguyen-bk18_flash&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=khoa-nguyen-bk18_flash)
