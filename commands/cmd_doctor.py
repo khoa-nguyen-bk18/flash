@@ -113,7 +113,7 @@ def run_doctor():
         ui.success(f"Gradle wrapper: {wrapper}")
         if sys.platform != "win32" and not os.access(wrapper, os.X_OK):
             ui.warning(f"{wrapper_name} chưa có quyền thực thi. Đang cấp quyền chmod +x...")
-            os.chmod(wrapper, 0o755)
+            os.chmod(wrapper, 0o755)  # NOSONAR: Ensure gradlew executable bit on Unix
     else:
         ui.error(f"Không tìm thấy {wrapper_name} tại {cfg.project_root}!")
         has_issues = True

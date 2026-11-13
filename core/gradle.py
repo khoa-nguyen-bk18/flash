@@ -24,7 +24,7 @@ def get_gradlew_path() -> Path:
         # Ensure executable bit on Unix
         if sys.platform != "win32" and not os.access(wrapper_path, os.X_OK):
             try:
-                os.chmod(wrapper_path, 0o755)
+                os.chmod(wrapper_path, 0o755)  # NOSONAR: Ensure gradlew executable bit on Unix
             except Exception:
                 pass
         return wrapper_path

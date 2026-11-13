@@ -1,5 +1,11 @@
 # ⚡ Android Studio Flash CLI Suite
 
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=khoa-nguyen-bk18_flash&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=khoa-nguyen-bk18_flash)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=khoa-nguyen-bk18_flash&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=khoa-nguyen-bk18_flash)
+[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=khoa-nguyen-bk18_flash&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=khoa-nguyen-bk18_flash)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=khoa-nguyen-bk18_flash&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=khoa-nguyen-bk18_flash)
+[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=khoa-nguyen-bk18_flash&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=khoa-nguyen-bk18_flash)
+
 Bộ công cụ dòng lệnh thay thế hoàn toàn extension **Android Studio Flash** trong Antigravity IDE / VS Code, cho phép lập trình viên build, cài đặt, chạy, quản lý thiết bị, gỡ lỗi không dây và theo dõi Logcat trực tiếp từ Command Line mà không phụ thuộc vào IDE.
 
 ---
@@ -28,6 +34,7 @@ hoặc dùng các shell script tắt trong `wrappers/`:
 ```bash
 ./wrappers/run.sh
 ./wrappers/devices.sh
+./wrappers/fastlane.sh
 ./wrappers/logcat.sh
 ./wrappers/quick.sh
 ```
@@ -267,4 +274,36 @@ Hiển thị danh sách đầy đủ tất cả các action:
 
 # Đồng bộ hóa dependencies Gradle (tasks)
 ./flash sync
+```
+
+---
+
+### 12. Tự Động Hóa Fastlane (Fastlane / Lane)
+Tự động quét cấu hình `Fastfile` và `Gemfile` trong dự án, hiển thị danh sách các option có thể thực thi với `bundle exec fastlane`, cho phép chọn theo index hoặc chạy trực tiếp tương tự cơ chế của `flash run`:
+
+```bash
+# Hiển thị menu danh sách lanes và chọn theo index (hỗ trợ nhập số hoặc 'a' để chạy tất cả)
+./flash fastlane
+# hoặc alias ngắn gọn:
+./flash lane
+./flash fl
+
+# Chạy trực tiếp theo số thứ tự index
+./flash fastlane 1
+
+# Chạy trực tiếp theo tên lane
+./flash fastlane build_debug
+./flash fastlane distribute_debug
+
+# Chỉ hiển thị danh sách lanes có sẵn mà không thực thi
+./flash fastlane -l
+
+# Chạy không thông qua Bundler (gọi trực tiếp lệnh fastlane toàn cục)
+./flash fastlane build_debug --no-bundle
+
+# Truyền thêm tham số bổ sung cho Fastlane (ví dụ options / flags)
+./flash fastlane distribute_debug groups:internal-testers --verbose
+
+# Sử dụng shell wrapper script tiện lợi
+./wrappers/fastlane.sh
 ```
