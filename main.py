@@ -28,6 +28,7 @@ from commands.cmd_logcat import run_logcat
 from commands.cmd_keystore import run_keystore_create
 from commands.cmd_module import run_module
 from commands.cmd_flavor import run_flavor
+from commands.cmd_fastlane import run_fastlane
 from commands.cmd_quick import (
     run_quick_menu, resolve_app_context,
     action_restart, action_kill, action_clear_data, action_clear_restart, action_start,
@@ -84,6 +85,10 @@ def main():
   flash build -f global          Biên dịch flavor 'global'
   flash build --all-flavors      Biên dịch tất cả product flavors
   flash flavor list              Xem danh sách productFlavors
+  flash fastlane                 Đọc Fastfile và chọn lane theo index để chạy qua bundle exec
+  flash fastlane 1               Chạy trực tiếp lane số 1 trong Fastfile
+  flash fastlane build_debug     Chạy lane 'build_debug' bằng bundle exec
+  flash fastlane -l              Liệt kê danh sách các lane Fastlane có sẵn
   flash action                   Mở menu thao tác nhanh ADB & thiết bị
   flash restart                  Khởi động lại ứng dụng trên thiết bị
   flash restart -c               Xóa dữ liệu và khởi động lại app
@@ -263,6 +268,33 @@ def main():
     p_mod.add_argument("action", nargs="?", default="list", choices=["list", "select"],
                        help="Hành động: list (xem danh sách) hoặc select (chọn module)")
 
+    # fastlane / lane / fl
+    p_fl = subparsers.add_parser(
+        "fastlane",
+        aliases=["lane", "fl"],
+        help="Đọc cấu hình Fastlane và thực thi lane (hỗ trợ bundle exec và chọn theo index)"
+    )
+    p_fl.add_argument(
+        "target",
+        nargs="?",
+        help="Tên lane hoặc index cần chạy (ví dụ: 1 hoặc build_debug). Bỏ trống để chọn tương tác."
+    )
+    p_fl.add_argument(
+        "-l", "--list",
+        action="store_true",
+        help="Chỉ hiển thị danh sách các lanes có sẵn mà không thực thi"
+    )
+    p_fl.add_argument(
+        "--no-bundle",
+        action="store_true",
+        help="Không sử dụng 'bundle exec', chạy trực tiếp lệnh 'fastlane'"
+    )
+    p_fl.add_argument(
+        "extra_args",
+        nargs=argparse.REMAINDER,
+        help="Các tham số bổ sung truyền trực tiếp cho Fastlane (ví dụ: key:value)"
+    )
+
     # install-global
     subparsers.add_parser("install-global", help="Cài đặt lệnh 'flash' global vào hệ thống")
 
@@ -360,6 +392,13 @@ def main():
             run_keystore_create()
         elif args.command == "module":
             run_module(action=args.action)
+        elif args.command in ("fastlane", "lane", "fl"):
+            run_fastlane(
+                target=args.target,
+                list_only=args.list,
+                no_bundle=args.no_bundle,
+                extra_args=args.extra_args
+            )
         elif args.command == "install-global":
             install_global_symlink()
     except KeyboardInterrupt:
