@@ -10,7 +10,7 @@ import subprocess
 from pathlib import Path
 from typing import Optional
 from .config import ConfigManager
-from .gradle import get_product_flavors
+from .gradle import get_product_flavors, get_flavor_combinations, get_build_types
 
 def get_package_from_apk(apk_path: Path) -> Optional[str]:
     cfg = ConfigManager.get_instance()
@@ -28,7 +28,8 @@ def get_package_from_apk(apk_path: Path) -> Optional[str]:
     return None
 
 
-def get_package_from_gradle(flavor: Optional[str] = None, module: Optional[str] = None) -> Optional[str]:
+def get_package_from_gradle(flavor: Optional[str] = None, module: Optional[str] = None,
+                            variant: Optional[str] = None) -> Optional[str]:
     cfg = ConfigManager.get_instance()
     root = cfg.project_root
 
@@ -72,13 +73,21 @@ def get_package_from_gradle(flavor: Optional[str] = None, module: Optional[str] 
     if not base_pkg:
         return None
 
+    suffix = ""
     if flavor:
-        flavors = get_product_flavors(module=module)
+        flavors = get_flavor_combinations(module=module) or get_product_flavors(module=module)
         for f in flavors:
             if f.name.lower() == flavor.lower() and f.application_id_suffix:
-                return f"{base_pkg}{f.application_id_suffix}"
+                suffix += f.application_id_suffix
+                break
 
-    return base_pkg
+    if variant:
+        for bt in get_build_types(module=module):
+            if bt.name.lower() == variant.lower() and bt.application_id_suffix:
+                suffix += bt.application_id_suffix
+                break
+
+    return f"{base_pkg}{suffix}" if suffix else base_pkg
 
 
 def get_package_from_manifest() -> Optional[str]:
@@ -113,15 +122,16 @@ def get_foreground_package(serial: str) -> Optional[str]:
 
 
 def detect_package_name(apk_path: Optional[Path] = None, serial: Optional[str] = None,
-                        flavor: Optional[str] = None, module: Optional[str] = None) -> Optional[str]:
+                        flavor: Optional[str] = None, module: Optional[str] = None,
+                        variant: Optional[str] = None) -> Optional[str]:
     """Smart detection combining all sources."""
     if apk_path:
         pkg = get_package_from_apk(apk_path)
         if pkg:
             return pkg
 
-    if flavor:
-        pkg = get_package_from_gradle(flavor=flavor, module=module)
+    if flavor or variant:
+        pkg = get_package_from_gradle(flavor=flavor, module=module, variant=variant)
         if pkg:
             return pkg
 

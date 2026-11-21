@@ -10,17 +10,24 @@ import shutil
 import json
 from pathlib import Path
 from typing import Optional, Dict, Any, List
+from .project import ProjectContext, ProjectType, detect_project
 
 class ConfigManager:
     _instance = None
 
     def __init__(self, start_dir: Optional[Path] = None):
         self.start_dir = Path(start_dir or os.getcwd()).resolve()
-        self.project_root = self._find_project_root(self.start_dir)
-        self.sdk_path = self._detect_sdk_path()
+        self.project_context: ProjectContext = detect_project(self.start_dir)
+        self.project_root = self.project_context.root
         self.config_dir = (self.project_root / ".flash") if self.project_root else (Path.home() / ".flash")
         self.config_file = self.config_dir / "config.json"
         self._ensure_config_dir()
+        # Re-resolve preferred Xcode workspace/project if saved in config
+        saved_xcode = self.get_selected_xcode_project()
+        if saved_xcode:
+            self.project_context = detect_project(self.start_dir, preferred_xcode=saved_xcode)
+            self.project_root = self.project_context.root
+        self.sdk_path = self._detect_sdk_path()
 
     @classmethod
     def get_instance(cls, start_dir: Optional[Path] = None):
@@ -228,3 +235,58 @@ class ConfigManager:
         if endpoint in devices:
             devices.remove(endpoint)
             self.save_config({"wireless_devices": devices})
+
+    # --- Multi-Platform & Xcode / iOS Configuration ---
+
+    def get_target_platform(self) -> Optional[str]:
+        return self.load_config().get("target_platform")
+
+    def set_target_platform(self, platform: Optional[str]):
+        self.save_config({"target_platform": platform})
+
+    def get_selected_ios_device(self) -> Optional[str]:
+        return self.load_config().get("selected_ios_device")
+
+    def set_selected_ios_device(self, udid: Optional[str]):
+        self.save_config({"selected_ios_device": udid})
+
+    def get_selected_xcode_scheme(self) -> Optional[str]:
+        return self.load_config().get("selected_xcode_scheme")
+
+    def set_selected_xcode_scheme(self, scheme: Optional[str]):
+        self.save_config({"selected_xcode_scheme": scheme})
+
+    def get_selected_xcode_config(self) -> Optional[str]:
+        return self.load_config().get("selected_xcode_config")
+
+    def set_selected_xcode_config(self, configuration: Optional[str]):
+        self.save_config({"selected_xcode_config": configuration})
+
+    def get_selected_xcode_project(self) -> Optional[str]:
+        return self.load_config().get("selected_xcode_project")
+
+    def set_selected_xcode_project(self, project_path: Optional[str]):
+        self.save_config({"selected_xcode_project": project_path})
+        self.project_context = detect_project(self.start_dir, preferred_xcode=project_path)
+
+    def get_derived_data_path(self) -> Path:
+        """Flash-isolated DerivedData path: <project_root>/.flash/DerivedData."""
+        custom = self.load_config().get("xcode_derived_data_path")
+        if custom:
+            return Path(custom).expanduser().resolve()
+        return (self.config_dir / "DerivedData").resolve()
+
+    def get_xcodebuild_path(self) -> str:
+        path = shutil.which("xcodebuild")
+        if path:
+            return path
+        raise FileNotFoundError("Không tìm thấy 'xcodebuild'. Hãy cài đặt Xcode và chạy 'xcode-select --install'.")
+
+    def get_xcrun_path(self) -> str:
+        path = shutil.which("xcrun")
+        if path:
+            return path
+        raise FileNotFoundError("Không tìm thấy 'xcrun'. Hãy cài đặt Xcode Command Line Tools.")
+
+    def get_pod_path(self) -> Optional[str]:
+        return shutil.which("pod")

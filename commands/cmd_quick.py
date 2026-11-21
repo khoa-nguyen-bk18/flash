@@ -15,7 +15,7 @@ from typing import Optional, Tuple, List
 
 from core.device import resolve_target_device, DeviceInfo
 from core.package_detector import detect_package_name, resolve_launcher_activity, get_foreground_package
-from core.gradle import get_product_flavors, resolve_target_flavor
+from core.gradle import get_flavor_combinations, resolve_target_flavor
 from core.config import ConfigManager
 from core import ui
 
@@ -40,7 +40,7 @@ def resolve_app_context(device_id: Optional[str] = None, flavor: Optional[str] =
         else:
             # 3. Check if foreground app belongs to project
             fg = get_foreground_package(dev.serial)
-            flavors = get_product_flavors()
+            flavors = get_flavor_combinations()
             if flavors:
                 possible_pkgs = []
                 for f in flavors:

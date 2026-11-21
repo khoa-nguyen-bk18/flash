@@ -6,7 +6,7 @@ from pathlib import Path
 
 from core import ui
 from core.device import DeviceInfo, resolve_target_devices
-from core.gradle import FlavorInfo, resolve_target_flavors, resolve_target_flavor
+from core.gradle import FlavorInfo, BuildVariantInfo, resolve_target_flavors, resolve_target_flavor
 from commands.cmd_run import run_app
 
 class TestFlashRunUpdates(unittest.TestCase):
@@ -70,14 +70,14 @@ class TestFlashRunUpdates(unittest.TestCase):
 
     @patch('commands.cmd_run.ConfigManager')
     @patch('commands.cmd_run.resolve_target_devices')
-    @patch('commands.cmd_run.resolve_target_flavors')
+    @patch('commands.cmd_run.resolve_target_variants')
     @patch('commands.cmd_run.execute_gradle')
     @patch('commands.cmd_run.find_best_apk')
     @patch('commands.cmd_run.subprocess.run')
     @patch('commands.cmd_run.detect_package_name')
     @patch('commands.cmd_run.resolve_launcher_activity')
     def test_run_app_multiple_devices_single_flavor(self, mock_launcher, mock_pkg, mock_subp,
-                                                     mock_find_apk, mock_gradle, mock_flavors,
+                                                     mock_find_apk, mock_gradle, mock_variants,
                                                      mock_devs, mock_cfg_mgr):
         cfg = MagicMock()
         cfg.get_adb_path.return_value = 'adb'
@@ -88,8 +88,9 @@ class TestFlashRunUpdates(unittest.TestCase):
         dev2 = DeviceInfo('ser2', 'device', 'device', 'Galaxy S23')
         mock_devs.return_value = [dev1, dev2]
 
-        flavor1 = FlavorInfo('staging')
-        mock_flavors.return_value = [flavor1]
+        variant1 = BuildVariantInfo('stagingDebug', build_type='debug', flavor_name='staging',
+                                    flavors=[FlavorInfo('staging')])
+        mock_variants.return_value = [variant1]
 
         mock_gradle.return_value = MagicMock(returncode=0)
 

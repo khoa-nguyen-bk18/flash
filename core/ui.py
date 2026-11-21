@@ -8,6 +8,7 @@ import sys
 import os
 import re
 import shutil
+from typing import Optional
 
 class Colors:
     ENABLED = sys.stdout.isatty() and not os.getenv("NO_COLOR")
@@ -110,22 +111,33 @@ def ask_multiselect(
     title: str,
     options: list[tuple[str, str]],
     all_label: str = "⚡ Run all",
-    default: str = "a"
+    default: str = "a",
+    extra_presets: Optional[dict[str, tuple[str, list[str]]]] = None
 ) -> list[str]:
     """
-    Select multiple items by entering index numbers separated by ',' or 'a' for all.
+    Select multiple items by entering index numbers separated by ',', preset keys, or 'a' for all.
     options: list of (value, label)
+    extra_presets: optional mapping {shortcut_key: (label, list_of_values)}
     Returns list of selected values.
     """
     if not options:
         return []
 
+    presets = {k.lower(): v for k, v in extra_presets.items()} if extra_presets else {}
+    option_idx_by_val = {opt[0]: idx for idx, opt in enumerate(options)}
+
     print(f"\n{Colors.BOLD}{title}{Colors.RESET}")
+    for key, (label, _) in presets.items():
+        print(f"  {Colors.YELLOW}[{key}]{Colors.RESET} {label}")
     print(f"  {Colors.CYAN}[a]{Colors.RESET} {all_label}")
     for idx, (val, desc) in enumerate(options):
         print(f"  {Colors.GREEN}[{idx + 1}]{Colors.RESET} {desc}")
 
-    prompt_msg = f"\n{Colors.BOLD}Chọn (1-{len(options)}, hoặc 'a' cho tất cả, cách nhau bởi dấu phẩy ',') [mặc định: {default}]:{Colors.RESET} "
+    if presets:
+        preset_keys = ", ".join(f"'{k}'" for k in presets)
+        prompt_msg = f"\n{Colors.BOLD}Chọn (1-{len(options)}, {preset_keys}, hoặc 'a' cho tất cả, cách nhau bởi dấu phẩy ',') [mặc định: {default}]:{Colors.RESET} "
+    else:
+        prompt_msg = f"\n{Colors.BOLD}Chọn (1-{len(options)}, hoặc 'a' cho tất cả, cách nhau bởi dấu phẩy ',') [mặc định: {default}]:{Colors.RESET} "
 
     while True:
         try:
@@ -142,6 +154,11 @@ def ask_multiselect(
             success(f"Đã chọn: Run all ({len(options)} mục)")
             return [opt[0] for opt in options]
 
+        if choice_lower in presets:
+            label, preset_vals = presets[choice_lower]
+            success(f"Đã chọn: {label}")
+            return list(preset_vals)
+
         # Split by comma or semicolon
         parts = [p.strip() for p in choice.replace(";", ",").split(",") if p.strip()]
 
@@ -152,7 +169,12 @@ def ask_multiselect(
         selected_indices = []
         invalid_parts = []
         for part in parts:
-            if part.isdigit():
+            part_lower = part.lower()
+            if part_lower in presets:
+                for val in presets[part_lower][1]:
+                    if val in option_idx_by_val and option_idx_by_val[val] not in selected_indices:
+                        selected_indices.append(option_idx_by_val[val])
+            elif part.isdigit():
                 num = int(part)
                 if 1 <= num <= len(options):
                     idx = num - 1
@@ -164,7 +186,10 @@ def ask_multiselect(
                 invalid_parts.append(part)
 
         if invalid_parts:
-            print(f"{Colors.RED}Lựa chọn không hợp lệ: {', '.join(invalid_parts)}. Vui lòng nhập số từ 1 đến {len(options)} hoặc 'a'.{Colors.RESET}")
+            valid_hint = f"1 đến {len(options)}"
+            if presets:
+                valid_hint += ", " + ", ".join(f"'{k}'" for k in presets)
+            print(f"{Colors.RED}Lựa chọn không hợp lệ: {', '.join(invalid_parts)}. Vui lòng nhập số từ {valid_hint} hoặc 'a'.{Colors.RESET}")
             continue
 
         if not selected_indices:

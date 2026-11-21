@@ -1,4 +1,4 @@
-# ⚡ Android Studio Flash CLI Suite
+# ⚡ Flash CLI Suite (Android, Xcode / iOS & KMP)
 
 [![CodeQL](https://github.com/khoa-nguyen-bk18/flash/actions/workflows/codeql.yml/badge.svg)](https://github.com/khoa-nguyen-bk18/flash/actions/workflows/codeql.yml)
 [![Secret Scanning](https://img.shields.io/badge/Secret%20Scanning-Protected-green?logo=github)](https://github.com/khoa-nguyen-bk18/flash/security)
@@ -8,21 +8,25 @@
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=khoa-nguyen-bk18_flash&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=khoa-nguyen-bk18_flash)
 [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=khoa-nguyen-bk18_flash&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=khoa-nguyen-bk18_flash)
 
-Bộ công cụ dòng lệnh thay thế hoàn toàn extension **Android Studio Flash** trong Antigravity IDE / VS Code, cho phép lập trình viên build, cài đặt, chạy, quản lý thiết bị, gỡ lỗi không dây và theo dõi Logcat trực tiếp từ Command Line mà không phụ thuộc vào IDE.
+Bộ công cụ dòng lệnh cho lập trình viên **Android**, **Xcode (iOS Native)** và **Kotlin Multiplatform (KMP)** — cho phép build, cài đặt, chạy, quản lý thiết bị/Simulator, thao tác nhanh và theo dõi Log trực tiếp từ Command Line mà không phụ thuộc vào IDE.
 
 ---
 
 ## 🚀 Tính năng nổi bật
 
-- **Zero External Dependencies**: Viết hoàn toàn bằng Python 3 Standard Library, chạy ngay lập tức không cần `pip install`.
-- **Tự động nhận diện môi trường**: Tự phát hiện Android SDK, ADB, AAPT, JDK `keytool`, và tự tạo/cập nhật `local.properties`.
-- **One-Click Run**: `./flash run` tự động Build -> Tìm file APK thông minh -> `adb install -r` -> Tìm Launcher Activity -> Khởi chạy app.
-- **Smart APK Discovery**: Quét đệ quy thư mục build, bỏ qua test APK, tự động tìm APK mới nhất ngay cả khi có Build Flavors phức tạp.
-- **Real-Time Device Monitoring**: Lắng nghe sự kiện cắm/rút USB thời gian thực qua `adb track-devices` mà không tốn CPU polling.
-- **Wireless Debugging**: Tự động lấy địa chỉ IP của thiết bị qua USB (hỗ trợ cả Wi-Fi `wlan0`, Hotspot `ap0`, tethering `rndis0`), chuyển port và kết nối không dây chỉ bằng 1 lệnh. Hỗ trợ cả Android 11+ Pairing.
-- **Colored Logcat Streaming**: Stream Logcat tô màu ANSI trực quan, tự động tìm PID của app để lọc chính xác log của ứng dụng, hỗ trợ lọc theo TAG hoặc Level (V, D, I, W, E, F).
-- **Keystore Wizard**: Tạo file khóa `.jks` tương tác trực tiếp trên terminal bằng JDK `keytool` và hỗ trợ lưu vào `local.properties` để tự động ký.
-- **Multi-Module Support**: Tự động phân tích `settings.gradle.kts` để xác định và nhắm mục tiêu các sub-module.
+- **Zero External Dependencies**: Viết hoàn toàn bằng Python 3 Standard Library + các công cụ CLI gốc (`adb`, `xcodebuild`, `xcrun simctl`, `xcrun devicectl`), chạy ngay lập tức không cần `pip install`.
+- **Đa nền tảng thông minh (Android, Native Xcode & KMP)**:
+  - Tự động nhận diện **Android-only**, **Native Xcode** (`.xcworkspace` / `.xcodeproj`), hoặc **KMP** (`settings.gradle.kts` + `iosApp/`).
+  - Trong dự án KMP: đứng trong `iosApp/` tự động chạy iOS, đứng trong `androidApp/` tự động chạy Android, hoặc chuyển đổi tức thì bằng `--ios` / `--android` / `flash platform select`.
+- **One-Click Run (Android & iOS)**:
+  - **Android**: `./flash run` tự động Build -> Tìm APK -> `adb install -r` -> Tìm Launcher Activity -> Khởi chạy app.
+  - **Xcode / iOS**: `./flash run --ios` tự động Boot Simulator (nếu đang tắt) -> `xcodebuild` (dùng `.flash/DerivedData` riêng biệt) -> Đọc `Info.plist` -> Cài đặt & Khởi chạy qua `simctl` (Simulator) hoặc `devicectl` (iPhone/iPad thật iOS 17+ USB & Wi-Fi). Hỗ trợ chạy song song nhiều thiết bị!
+- **Smart Artifact Discovery**: Quét đệ quy APK (Android) và `.app` / `.xcarchive` / `.ipa` (iOS), hỗ trợ Product Flavors Matrix & Xcode Schemes/Configurations.
+- **Real-Time Device Monitoring**: Lắng nghe sự kiện thiết bị Android (`adb track-devices`) và iOS (`xcrun xcdevice observe`).
+- **Wireless Debugging**: Tự động chuyển USB sang Wi-Fi cho Android (kèm Android 11+ Pairing) và hỗ trợ thiết bị iOS qua Wi-Fi với Xcode 15+ `devicectl`.
+- **Colored Log Streaming**: Stream Logcat (Android) và Unified Logs (iOS Simulator) tô màu ANSI trực quan, tự động lọc theo App, TAG/Subsystem hoặc Level (V, D, I, W, E, F).
+- **Quick Actions 1-Click**: Restart, Kill, Clear Data & Restart, Grant/Revoke Permissions, Screenshot, và các tiện ích iOS Simulator (Boot/Shutdown/Erase, Toggle Dark/Light Mode, Open Deep Link URL).
+- **Keystore Wizard & Multi-Module & Fastlane**: Tạo `.jks`, quản lý Gradle modules / Xcode workspaces, và chạy Fastlane lanes cho cả Android lẫn iOS (`iosApp/fastlane/Fastfile`, `ios/fastlane/Fastfile`).
 
 ---
 
@@ -308,4 +312,50 @@ Tự động quét cấu hình `Fastfile` và `Gemfile` trong dự án, hiển t
 
 # Sử dụng shell wrapper script tiện lợi
 ./wrappers/fastlane.sh
+```
+
+---
+
+### 13. Hỗ Trợ Xcode (iOS Native) & Kotlin Multiplatform (KMP)
+
+Trong **Native Xcode project**, mọi lệnh `flash` tự động chạy ở chế độ iOS mà không cần thêm cờ. Trong **KMP project**, bạn có thể thêm `--ios` / `--android` (hoặc `-P ios` / `-P android`), đứng trực tiếp trong thư mục `iosApp/` / `androidApp/`, hoặc ghim nền tảng mặc định:
+
+```bash
+# Kiểm tra môi trường cả Android + Xcode/iOS (trên KMP)
+./flash doctor
+./flash doctor --ios
+
+# Quản lý nền tảng mặc định cho KMP project
+./flash platform list
+./flash platform select ios
+./flash platform clear
+
+# Quản lý thiết bị iOS (Physical Devices USB/Wi-Fi + Simulators)
+./flash devices --ios
+./flash devices --ios -s          # Chọn thiết bị iOS mặc định
+./flash devices --ios --watch     # Giám sát thiết bị thời gian thực
+
+# Quản lý Xcode Schemes & Configurations
+./flash scheme list               # (hoặc ./flash flavor list --ios)
+./flash scheme select iosApp
+./flash scheme clear
+
+# Build & Run trên iOS Simulator / Physical Device
+./flash build --ios
+./flash build --ios -f iosApp -v Release --signed
+./flash run --ios                 # Tự Boot Simulator nếu đang tắt -> Build -> Install -> Launch
+./flash run --ios --no-build      # Dùng lại .app đã build trong .flash/DerivedData
+./flash run --ios --logs          # Chạy app và stream iOS Unified Logs tô màu
+
+# Thao tác nhanh iOS (Quick Actions)
+./flash quick --ios               # Popup menu (kèm Boot/Shutdown/Erase Simulator, Dark/Light, Deep Link)
+./flash clear-restart --ios       # Xóa dữ liệu app container trên Simulator & mở lại
+./flash perm grant --ios          # Cấp toàn bộ quyền Simulator (simctl privacy)
+./flash screenshot --ios --open   # Chụp màn hình Simulator và mở xem
+./flash logs --ios                # Stream iOS logs có lọc theo app / subsystem / level
+
+# Dọn dẹp & Đồng bộ dependencies (CocoaPods, SwiftPM, KMP)
+./flash clean --ios               # Clean Xcode + xóa .flash/DerivedData
+./flash clean --ios --all         # Clean cả Xcode lẫn Gradle (KMP)
+./flash sync --ios                # Chạy KMP generateDummyFramework (nếu có) + pod install + SPM resolve
 ```

@@ -8,13 +8,23 @@ import sys
 import subprocess
 import shutil
 from pathlib import Path
+from typing import Optional
 from core.config import ConfigManager
 from core.device import get_connected_devices
+from core.project import ProjectType
 from core import ui
 
-def run_doctor():
-    ui.header("Android Flash Doctor - Kiểm tra chẩn đoán môi trường")
+def run_doctor(platform: Optional[str] = None):
     cfg = ConfigManager.get_instance()
+    ctx = cfg.project_context
+
+    # Route to iOS-only doctor if explicitly requested or Native Xcode project
+    if platform == "ios" or (platform is None and ctx.project_type == ProjectType.XCODE):
+        from commands.cmd_ios_doctor import run_ios_doctor
+        run_ios_doctor(standalone=True)
+        return
+
+    ui.header("Android Flash Doctor - Kiểm tra chẩn đoán môi trường")
     has_issues = False
 
     # 1. Check Project Root
@@ -117,6 +127,13 @@ def run_doctor():
     else:
         ui.error(f"Không tìm thấy {wrapper_name} tại {cfg.project_root}!")
         has_issues = True
+
+    # If KMP project (and not restricted to Android-only), also run iOS/Xcode diagnostics
+    if platform is None and ctx.project_type == ProjectType.KMP:
+        print()
+        from commands.cmd_ios_doctor import run_ios_doctor
+        ios_issues = run_ios_doctor(standalone=False)
+        has_issues = has_issues or ios_issues
 
     # Summary
     print()
