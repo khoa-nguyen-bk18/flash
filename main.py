@@ -30,7 +30,8 @@ from commands.cmd_build import run_build, run_clean, run_sync
 from commands.cmd_run import run_app
 from commands.cmd_wireless import (
     run_wireless_setup, run_wireless_pair, run_wireless_connect,
-    run_wireless_disconnect, run_wireless_reconnect
+    run_wireless_disconnect, run_wireless_reconnect,
+    run_wireless_qr, run_wireless_discover,
 )
 from commands.cmd_logcat import run_logcat
 from commands.cmd_keystore import run_keystore_create
@@ -141,6 +142,7 @@ def main():
   flash action                   Mở menu thao tác nhanh thiết bị (ADB / Simulator & Device)
   flash clear-restart            Xóa dữ liệu và khởi động lại app ngay lập tức (alias: reset, cr)
   flash screenshot --open        Chụp ảnh màn hình thiết bị / Simulator và mở xem
+  flash wireless qr              Kết nối Wi-Fi Debugging bằng mã QR (Android 11+)
   flash devices --watch          Giám sát cắm/rút thiết bị thời gian thực
   flash logs                     Xem log thời gian thực có màu sắc (alias của logcat)
   flash doctor                   Kiểm tra chẩn đoán môi trường Android SDK, Xcode, Simulators, Devices
@@ -308,19 +310,47 @@ def main():
 
     # wireless
     p_wire = subparsers.add_parser("wireless", parents=[platform_parent],
-                                   help="Quản lý gỡ lỗi không dây (Android TCP/IP & thông tin iOS Wi-Fi)")
+                                   help="Quản lý gỡ lỗi không dây (QR pairing Android 11+, TCP/IP & iOS Wi-Fi)")
     wire_subs = p_wire.add_subparsers(dest="wire_action", help="Hành động wireless")
+
+    p_wire_qr = wire_subs.add_parser(
+        "qr",
+        aliases=["scan", "qrcode"],
+        help="Hiển thị mã QR để ghép đôi & kết nối Wi-Fi Debugging (Android 11+)",
+    )
+    p_wire_qr.add_argument("-t", "--timeout", type=int, default=120,
+                           help="Thời gian tối đa chờ quét QR tính bằng giây (mặc định: 120)")
+    p_wire_qr.add_argument("--no-connect", action="store_true",
+                           help="Chỉ ghép đôi (pair), không tự động chạy adb connect")
+    p_wire_qr.add_argument("--invert", action="store_true",
+                           help="Đảo màu QR (hữu ích cho một số terminal nền sáng/đặc thù)")
+    p_wire_qr.add_argument("--compact", action="store_true",
+                           help="Hiển thị mã QR dạng thu gọn (half-block) cho cửa sổ terminal nhỏ")
+    p_wire_qr.add_argument("--name", help="Tên service mDNS tùy chỉnh cho mã QR")
 
     p_wire_setup = wire_subs.add_parser("setup", help="Tự động lấy IP qua USB và kích hoạt kết nối Wi-Fi")
     p_wire_setup.add_argument("-s", "--device", help="Serial thiết bị USB cần cấu hình")
     p_wire_setup.add_argument("-p", "--port", type=int, default=5555, help="Port TCP/IP (mặc định: 5555)")
 
-    p_wire_pair = wire_subs.add_parser("pair", help="Ghép đôi mã pairing (Android 11+)")
-    p_wire_pair.add_argument("endpoint", help="Địa chỉ IP:PORT (ví dụ: 192.168.1.100:45678)")
-    p_wire_pair.add_argument("code", help="Mã Pairing 6 chữ số")
+    p_wire_pair = wire_subs.add_parser("pair", help="Ghép đôi mã QR hoặc mã pairing 6 chữ số (Android 11+)")
+    p_wire_pair.add_argument("endpoint", nargs="?", help="Địa chỉ IP:PORT (ví dụ: 192.168.1.100:45678)")
+    p_wire_pair.add_argument("code", nargs="?", help="Mã Pairing 6 chữ số")
+    p_wire_pair.add_argument("--qr", action="store_true", help="Ghép đôi bằng mã QR trên terminal")
+    p_wire_pair.add_argument("-t", "--timeout", type=int, default=120,
+                             help="Thời gian tối đa chờ quét QR khi dùng --qr (mặc định: 120)")
+    p_wire_pair.add_argument("--invert", action="store_true",
+                             help="Đảo màu QR khi dùng --qr")
+    p_wire_pair.add_argument("--compact", action="store_true",
+                             help="Hiển thị mã QR dạng thu gọn (half-block) khi dùng --qr")
 
-    p_wire_conn = wire_subs.add_parser("connect", help="Kết nối tới IP thiết bị đã bật TCP/IP")
-    p_wire_conn.add_argument("endpoint", help="Địa chỉ IP hoặc IP:PORT")
+    p_wire_conn = wire_subs.add_parser("connect", help="Kết nối tới thiết bị Wi-Fi (tự dò mDNS nếu bỏ trống)")
+    p_wire_conn.add_argument("endpoint", nargs="?", help="Địa chỉ IP hoặc IP:PORT (bỏ trống để dò qua mDNS)")
+
+    wire_subs.add_parser(
+        "discover",
+        aliases=["list", "ls"],
+        help="Dò tìm các thiết bị Android đang bật Wireless Debugging trong mạng Wi-Fi (mDNS)",
+    )
 
     wire_subs.add_parser("reconnect", help="Kết nối lại tất cả các thiết bị không dây đã nhớ")
 
@@ -598,14 +628,37 @@ def main():
                 run_ios_devices(watch=False, select=False)
             else:
                 action = args.wire_action or "setup"
-                if action == "setup":
+                if action in ("qr", "scan", "qrcode"):
+                    ok = run_wireless_qr(
+                        timeout=args.timeout,
+                        auto_connect=not args.no_connect,
+                        invert=args.invert,
+                        service_name=args.name,
+                        compact=args.compact,
+                    )
+                    if not ok:
+                        sys.exit(1)
+                elif action in ("discover", "list", "ls"):
+                    run_wireless_discover()
+                elif action == "setup":
                     dev_id = getattr(args, "device", None)
                     port = getattr(args, "port", 5555)
                     run_wireless_setup(device_id=dev_id, port=port)
                 elif action == "pair":
-                    run_wireless_pair(args.endpoint, args.code)
+                    ok = run_wireless_pair(
+                        args.endpoint,
+                        args.code,
+                        use_qr=getattr(args, "qr", False),
+                        timeout=getattr(args, "timeout", 120),
+                        invert=getattr(args, "invert", False),
+                        compact=getattr(args, "compact", False),
+                    )
+                    if not ok:
+                        sys.exit(1)
                 elif action == "connect":
-                    run_wireless_connect(args.endpoint)
+                    ok = run_wireless_connect(args.endpoint)
+                    if not ok:
+                        sys.exit(1)
                 elif action == "reconnect":
                     run_wireless_reconnect()
                 elif action == "disconnect":

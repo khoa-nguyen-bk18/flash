@@ -20,7 +20,7 @@ def run_devices(watch: bool = False, select: bool = False):
     ui.header("Danh sách thiết bị kết nối")
     if not devs:
         ui.warning("Không có thiết bị hoặc emulator nào đang kết nối.")
-        ui.info("Dùng 'flash wireless setup' để kết nối không dây hoặc cắm cáp USB.")
+        ui.info("Dùng 'flash wireless qr' (quét QR Android 11+), 'flash wireless setup' (USB->Wi-Fi), hoặc cắm cáp USB.")
         return
 
     print(f"Tổng số: {len(devs)} thiết bị\n")

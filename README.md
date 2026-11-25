@@ -23,7 +23,7 @@ Bộ công cụ dòng lệnh cho lập trình viên **Android**, **Xcode (iOS Na
   - **Xcode / iOS**: `./flash run --ios` tự động Boot Simulator (nếu đang tắt) -> `xcodebuild` (dùng `.flash/DerivedData` riêng biệt) -> Đọc `Info.plist` -> Cài đặt & Khởi chạy qua `simctl` (Simulator) hoặc `devicectl` (iPhone/iPad thật iOS 17+ USB & Wi-Fi). Hỗ trợ chạy song song nhiều thiết bị!
 - **Smart Artifact Discovery**: Quét đệ quy APK (Android) và `.app` / `.xcarchive` / `.ipa` (iOS), hỗ trợ Product Flavors Matrix & Xcode Schemes/Configurations.
 - **Real-Time Device Monitoring**: Lắng nghe sự kiện thiết bị Android (`adb track-devices`) và iOS (`xcrun xcdevice observe`).
-- **Wireless Debugging**: Tự động chuyển USB sang Wi-Fi cho Android (kèm Android 11+ Pairing) và hỗ trợ thiết bị iOS qua Wi-Fi với Xcode 15+ `devicectl`.
+- **Wireless Debugging**: Kết nối không dây qua **mã QR trực tiếp trên terminal** (`flash wireless qr` cho Android 11+), tự động chuyển USB sang Wi-Fi cho Android, dò tìm mDNS (`flash wireless discover`), và hỗ trợ thiết bị iOS qua Wi-Fi với Xcode 15+ `devicectl`.
 - **Colored Log Streaming**: Stream Logcat (Android) và Unified Logs (iOS Simulator) tô màu ANSI trực quan, tự động lọc theo App, TAG/Subsystem hoặc Level (V, D, I, W, E, F).
 - **Quick Actions 1-Click**: Restart, Kill, Clear Data & Restart, Grant/Revoke Permissions, Screenshot, và các tiện ích iOS Simulator (Boot/Shutdown/Erase, Toggle Dark/Light Mode, Open Deep Link URL).
 - **Keystore Wizard & Multi-Module & Fastlane**: Tạo `.jks`, quản lý Gradle modules / Xcode workspaces, và chạy Fastlane lanes cho cả Android lẫn iOS (`iosApp/fastlane/Fastfile`, `ios/fastlane/Fastfile`).
@@ -215,14 +215,29 @@ Hiển thị danh sách đầy đủ tất cả các action:
 ---
 
 ### 7. Gỡ lỗi không dây (Wireless Debugging)
+Hỗ trợ ghép đôi trực tiếp qua **mã QR trên terminal** cho **Android 11+** (không cần cắm cáp USB): Flash tự tạo mã QR thuần Python hiển thị liền mạch bằng ANSI 256-color, lắng nghe dịch vụ mDNS (`adb mdns services`) khi điện thoại quét từ **Settings -> Developer options -> Wireless debugging -> Pair device with QR code**, rồi tự động chạy `adb pair` và `adb connect`.
+
 ```bash
+# Kết nối không dây bằng mã QR trên terminal (Android 11+, không cần cáp USB)
+./flash wireless qr              # (Aliases: ./flash wireless scan, ./flash wireless qrcode, ./flash wireless pair --qr)
+./flash wireless qr --compact    # Hiển thị dạng thu gọn (half-block) cho cửa sổ terminal nhỏ
+./flash wireless qr --invert     # Đảo màu QR nếu cần
+./flash wireless qr -t 180       # Tùy chỉnh timeout chờ quét (giây, mặc định: 120)
+./flash wireless qr --no-connect # Chỉ ghép đôi (pair), không tự động chạy adb connect
+./flash wireless qr --name dev1  # Tùy chỉnh tên service mDNS cho mã QR
+
+# Dò tìm thiết bị đang bật Wireless Debugging trong mạng Wi-Fi (mDNS)
+./flash wireless discover        # (Aliases: ./flash wireless list, ./flash wireless ls)
+
 # Tự động lấy IP qua USB và kích hoạt kết nối Wi-Fi (Android 4.0+)
 ./flash wireless setup
 
-# Ghép đôi thiết bị qua Pairing Code (Android 11+)
+# Ghép đôi thiết bị tương tác (chọn QR hoặc mã 6 số) hoặc nhập trực tiếp Pairing Code (Android 11+)
+./flash wireless pair
 ./flash wireless pair 192.168.1.100:45678 123456
 
-# Kết nối trực tiếp tới IP đã bật TCP/IP
+# Kết nối tới IP thiết bị (hoặc bỏ trống để tự dò qua mDNS)
+./flash wireless connect
 ./flash wireless connect 192.168.1.100:5555
 
 # Tự động kết nối lại tất cả các thiết bị Wi-Fi đã nhớ trước đó
